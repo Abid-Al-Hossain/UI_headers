@@ -4,30 +4,74 @@ import type { CSSProperties } from "react";
 import type { HeaderState } from "../types";
 
 function box(state: HeaderState): CSSProperties {
-  return { width: state.width, minHeight: state.height, padding: state.padding, margin: state.margin, gap: state.gap, borderRadius: state.radius, border: `${state.borderWidth}px solid ${state.border}`, boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`, background: state.background, color: state.foreground, fontFamily: state.fontFamily };
+  return {
+    width: state.width,
+    minHeight: state.height,
+    padding: state.compactOnScroll || state.previewState === "collapsed" ? Math.max(12, Math.round(state.padding * 0.62)) : state.padding,
+    margin: state.margin,
+    gap: state.gap,
+    borderRadius: state.radius,
+    border: `${state.borderWidth}px solid ${state.border}`,
+    boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`,
+    background: state.background,
+    color: state.foreground,
+    fontFamily: state.fontFamily,
+    position: state.sticky ? "sticky" : "relative",
+    top: state.sticky ? 0 : undefined,
+    transition: state.motion ? "all 180ms ease" : undefined,
+  };
 }
 
 export default function LivePreview({ state }: { state: HeaderState }) {
-  const model = state as Record<string, unknown>;
-  const numberValue = (key: string, fallback: number) => typeof model[key] === "number" ? model[key] : fallback;
-  const stringValue = (key: string, fallback: string) => typeof model[key] === "string" ? model[key] : fallback;
-  const boolValue = (key: string, fallback = false) => typeof model[key] === "boolean" ? model[key] : fallback;
-  const count = numberValue("itemCount", numberValue("navCount", numberValue("linkCount", numberValue("columnCount", 4))));
-  const items = Array.from({ length: count }, (_, index) => index + 1);
+  const navItems = Array.from({ length: state.navCount }, (_, index) => `Section ${index + 1}`);
+  const actions = Array.from({ length: state.actionCount }, (_, index) => (index === 0 ? "Docs" : index === 1 ? "Launch" : `Action ${index + 1}`));
   const style = box(state);
-  if (stringValue("role", "") === "separator" || "orientation" in model) {
-    const orientation = stringValue("orientation", "horizontal") as "horizontal" | "vertical";
-    const length = numberValue("length", state.width);
-    const thickness = numberValue("thickness", state.borderWidth || 1);
-    return <div role={boolValue("decorative") ? "presentation" : "separator"} aria-orientation={orientation} style={{ ...style, minHeight: orientation === "vertical" ? length : thickness, width: orientation === "vertical" ? thickness : length, padding: 0, background: state.accent }} />;
-  }
-  if ("axis" in model) {
-    const axis = stringValue("axis", "block");
-    const size = numberValue("size", 72);
-    const thickness = numberValue("thickness", 1);
-    return <div aria-hidden={boolValue("decorative")} role={boolValue("decorative") ? "presentation" : "separator"} style={{ ...style, minHeight: axis === "inline" ? thickness : size, width: axis === "block" ? "100%" : size, display: "grid", placeItems: "center" }}>{boolValue("debugVisible") ? stringValue("token", "space") : ""}</div>;
-  }
-  const gridColumns = "columns" in model ? `repeat(${numberValue("columns", 3)}, minmax(0, 1fr))` : undefined;
-  const isFlex = "direction" in model;
-  return <section id={state.id} role={state.role === "presentation" ? undefined : state.role} aria-label={state.landmarkLabel} tabIndex={state.tabIndex} style={style} className="grid content-center"><h3 style={{ fontSize: state.titleSize, fontWeight: state.fontWeight }}>{state.title}</h3><p style={{ color: state.muted, fontSize: state.bodySize }}>{state.description}</p><div className="grid gap-3" style={{ gridTemplateColumns: gridColumns, display: isFlex ? "flex" : undefined, flexDirection: isFlex ? stringValue("direction", "row") as CSSProperties["flexDirection"] : undefined, flexWrap: "wrap" in model ? stringValue("wrap", "wrap") as CSSProperties["flexWrap"] : undefined, justifyContent: "justify" in model ? stringValue("justify", "center") as CSSProperties["justifyContent"] : undefined, alignItems: "align" in model ? stringValue("align", "stretch") as CSSProperties["alignItems"] : undefined }}>{items.map((item) => <div key={item} className="rounded-xl border p-3" style={{ borderColor: state.border, background: "rgba(255,255,255,.06)" }}>Item {item}</div>)}</div></section>;
+  const isMobile = state.previewState === "mobile";
+  const navHidden = state.mobileMode === "collapse" && isMobile;
+
+  return (
+    <header id={state.id} aria-label={state.landmarkLabel} tabIndex={state.tabIndex} style={style}>
+      <div className="flex flex-wrap items-center justify-between" style={{ gap: state.gap }}>
+        <a href="#" className="font-semibold" style={{ color: state.foreground, fontSize: state.titleSize, fontWeight: state.fontWeight }}>
+          {state.title}
+        </a>
+        <nav aria-label={`${state.landmarkLabel} links`} className={navHidden ? "hidden" : "flex flex-wrap items-center"} style={{ gap: Math.max(8, state.gap / 2) }}>
+          {navItems.map((item, index) => (
+            <a
+              key={item}
+              href="#"
+              className="rounded-full px-3 py-2 text-sm font-medium"
+              style={{
+                color: index === 0 || state.previewState === "hover" ? state.foreground : state.muted,
+                background: state.previewState === "active" && index === 0 ? state.accent : "transparent",
+                outline: state.previewState === "focus" && index === 0 ? `2px solid ${state.accent}` : undefined,
+                outlineOffset: 3,
+              }}
+            >
+              {item}
+            </a>
+          ))}
+        </nav>
+        <div className="flex flex-wrap items-center" style={{ gap: Math.max(8, state.gap / 2) }}>
+          {actions.map((action, index) => (
+            <a
+              key={action}
+              href="#"
+              className="rounded-full px-4 py-2 text-sm font-semibold"
+              style={{ background: index === actions.length - 1 ? state.accent : "transparent", border: `1px solid ${state.border}`, color: index === actions.length - 1 ? state.background : state.foreground }}
+            >
+              {action}
+            </a>
+          ))}
+        </div>
+      </div>
+      <section aria-labelledby={`${state.id}-title`} className="grid" style={{ gap: Math.max(10, state.gap), marginTop: state.gap }}>
+        <p className="text-xs uppercase tracking-[0.2em]" style={{ color: state.accent }}>Hero slot</p>
+        <h1 id={`${state.id}-title`} style={{ fontSize: Math.max(state.titleSize + 12, state.titleSize * 1.45), lineHeight: 1.05, fontWeight: state.fontWeight, maxWidth: 680 }}>
+          {state.title}
+        </h1>
+        <p style={{ color: state.muted, fontSize: state.bodySize, maxWidth: 620 }}>{state.description}</p>
+      </section>
+    </header>
+  );
 }
