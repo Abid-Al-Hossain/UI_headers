@@ -64,6 +64,10 @@ export type HeaderState = {
   sticky: boolean;
   compactOnScroll: boolean;
   mobileMode: "collapse" | "drawer" | "stack";
+  hoverEnabled: boolean;
+  hoverBg: string;
+  hoverBorder: string;
+  hoverShadow: string;
 };
 
 export type StudioPreset = { id: string; family: string; archetype: string; variant: string; size: string; tags: string[]; state: Partial<HeaderState> & Record<string, unknown> };

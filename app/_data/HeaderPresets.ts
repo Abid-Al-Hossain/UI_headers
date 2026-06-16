@@ -58,7 +58,11 @@ export const DEFAULT_HEADER_STATE: HeaderState = {
   "actionCount": 2,
   "sticky": true,
   "compactOnScroll": false,
-  "mobileMode": "drawer"
+  "mobileMode": "drawer",
+  "hoverEnabled": false,
+  "hoverBg": "rgba(56,189,248,0.06)",
+  "hoverBorder": "#38bdf8",
+  "hoverShadow": "0 12px 24px rgba(0,0,0,0.25)"
 };
 
 export const HEADER_PRESETS: StudioPreset[] = [

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import type { HeaderState } from "../types";
 import { SYSTEM_FONTS } from "@/components/shared/typography/fontConstants";
 
@@ -49,12 +49,20 @@ function box(state: HeaderState): CSSProperties {
 export default function LivePreview({ state }: { state: HeaderState }) {
   const navItems = Array.from({ length: state.navCount }, (_, index) => `Section ${index + 1}`);
   const actions = Array.from({ length: state.actionCount }, (_, index) => (index === 0 ? "Docs" : index === 1 ? "Launch" : `Action ${index + 1}`));
-  const style = box(state);
+  const [isHovered, setIsHovered] = useState(false);
+  const hovered = state.hoverEnabled && isHovered;
+  const baseStyle = box(state);
+  const style: CSSProperties = {
+    ...baseStyle,
+    background: hovered ? state.hoverBg : baseStyle.background,
+    borderColor: hovered ? state.hoverBorder : state.border,
+    boxShadow: hovered ? state.hoverShadow : baseStyle.boxShadow,
+  };
   const isMobile = state.previewState === "mobile";
   const navHidden = state.mobileMode === "collapse" && isMobile;
 
   return (
-    <header id={state.id} aria-label={state.landmarkLabel} tabIndex={state.tabIndex} style={style}>
+    <header id={state.id} aria-label={state.landmarkLabel} tabIndex={state.tabIndex} style={style} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       <div className="flex flex-wrap items-center justify-between" style={{ gap: state.gap }}>
         <a href="#" className="font-semibold" style={{ color: state.foreground, fontSize: state.titleSize, fontWeight: state.fontWeight }}>
           {state.title}
